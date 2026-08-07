@@ -14,7 +14,7 @@
 
 <body>
   <div id="unity-container" class="unity-desktop">
-    <canvas id="unity-canvas" width=100% height=100% tabindex="-1"></canvas>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
     <div id="unity-loading-bar">
       <div id="unity-logo"></div>
       <div id="unity-progress-bar-empty">
@@ -99,6 +99,56 @@
       canvas.style.height = "100%";
     }
 
+    function getViewportSize() {
+      var width = Math.max(
+        document.documentElement.clientWidth || 0,
+        window.innerWidth || 0,
+        1
+      );
+      var height = Math.max(
+        document.documentElement.clientHeight || 0,
+        window.innerHeight || 0,
+        1
+      );
+
+      return { width: width, height: height };
+    }
+
+    function resizeUnityCanvas() {
+      var size = getViewportSize();
+
+      container.style.width = size.width + "px";
+      container.style.height = size.height + "px";
+      canvas.style.width = size.width + "px";
+      canvas.style.height = size.height + "px";
+    }
+
+    function waitForViewport(callback) {
+      var attempts = 0;
+
+      function tryStart() {
+        var size = getViewportSize();
+        resizeUnityCanvas();
+
+        if ((size.width > 1 && size.height > 1) || attempts >= 120) {
+          callback();
+          return;
+        }
+
+        attempts++;
+        requestAnimationFrame(tryStart);
+      }
+
+      tryStart();
+    }
+
+    window.addEventListener("resize", resizeUnityCanvas);
+    window.addEventListener("orientationchange", function() {
+      setTimeout(resizeUnityCanvas, 0);
+      setTimeout(resizeUnityCanvas, 250);
+    });
+
+    resizeUnityCanvas();
     loadingBar.style.display = "block";
 
     const subZipStr = '.zip';
@@ -236,7 +286,7 @@
     }
 
     // Path 1: Use this path if no decompression of your .wasm, .data, .js files are needed
-    InitUnitySection();
+    waitForViewport(InitUnitySection);
 
     // Path 2: Use this path to Load resources (.wasm, .data) that are Zipped and need to be decompressed
     // if you dont use compresseion its best to comment out Path 1 and uncomment Path 2.
